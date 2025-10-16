@@ -14,10 +14,15 @@ import {
   Divider,
 } from "@mui/material";
 import { Layers as LayersIcon, Info as InfoIcon } from "@mui/icons-material";
+import MapView from "./components/MapView";
+import type { WFSFeature } from "./services/wfsService";
 
 function App() {
   const [layersOpen, setLayersOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<WFSFeature | null>(
+    null
+  );
   const [selectedLayers, setSelectedLayers] = useState({
     wms: true,
     wfs: false,
@@ -37,6 +42,11 @@ function App() {
 
   const toggleInfo = () => {
     setInfoOpen(!infoOpen);
+  };
+
+  const handleFeatureClick = (feature: WFSFeature) => {
+    setSelectedFeature(feature);
+    setInfoOpen(true);
   };
 
   return (
@@ -67,13 +77,9 @@ function App() {
       {/* Основной контент */}
       <Box sx={{ display: "flex", flexGrow: 1, position: "relative" }}>
         {/* Карта */}
-        <Box
-          id="map"
-          sx={{
-            flexGrow: 1,
-            height: "100%",
-            width: "100%",
-          }}
+        <MapView
+          selectedLayers={selectedLayers}
+          onFeatureClick={handleFeatureClick}
         />
 
         {/* Информационная панель */}
@@ -94,9 +100,37 @@ function App() {
               Информация об объекте
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Typography variant="body2" color="text.secondary">
-              Кликните на объект на карте для получения информации
-            </Typography>
+            {selectedFeature ? (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Свойства объекта:
+                </Typography>
+                {Object.entries(selectedFeature.properties).map(
+                  ([key, value]) => (
+                    <Box key={key} sx={{ mb: 1 }}>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {key}:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ ml: 1 }}
+                      >
+                        {String(value)}
+                      </Typography>
+                    </Box>
+                  )
+                )}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Кликните на объект на карте для получения информации
+              </Typography>
+            )}
           </Paper>
         )}
       </Box>
