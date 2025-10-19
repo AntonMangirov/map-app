@@ -18,22 +18,28 @@ export class WFSService {
   private baseUrl: string;
   private username: string;
   private password: string;
+  private defaultBuffer: number;
 
-  constructor(baseUrl?: string, username?: string, password?: string) {
-    this.baseUrl =
-      baseUrl || import.meta.env.VITE_WFS_BASE_URL || "https://example.com/wfs";
-    this.username = username || import.meta.env.VITE_WFS_USERNAME || "mo";
-    this.password = password || import.meta.env.VITE_WFS_PASSWORD || "mo";
+  constructor(
+    baseUrl?: string,
+    username?: string,
+    password?: string,
+    defaultBuffer?: number
+  ) {
+    this.baseUrl = baseUrl || import.meta.env.VITE_WFS_BASE_URL || "";
+    this.username = username || import.meta.env.VITE_WFS_USERNAME || "";
+    this.password = password || import.meta.env.VITE_WFS_PASSWORD || "";
+    this.defaultBuffer = defaultBuffer || Number(import.meta.env.VITE_WFS_BUFFER) || 0.001;
   }
 
   async getFeatureByPoint(
     lat: number,
     lng: number,
     layerName: string,
-    buffer: number = 0.001
+    buffer?: number
   ): Promise<WFSResponse | null> {
     try {
-      const bbox = this.createBboxFromPoint(lat, lng, buffer);
+      const bbox = this.createBboxFromPoint(lat, lng, buffer || this.defaultBuffer);
 
       const params = new URLSearchParams({
         service: "WFS",

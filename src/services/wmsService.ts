@@ -27,10 +27,9 @@ export class WMSService {
   private password: string;
 
   constructor(baseUrl?: string, username?: string, password?: string) {
-    this.baseUrl =
-      baseUrl || import.meta.env.VITE_WMS_BASE_URL || "https://example.com/wms";
-    this.username = username || import.meta.env.VITE_WMS_USERNAME || "mo";
-    this.password = password || import.meta.env.VITE_WMS_PASSWORD || "mo";
+    this.baseUrl = baseUrl || import.meta.env.VITE_WMS_BASE_URL || "";
+    this.username = username || import.meta.env.VITE_WMS_USERNAME || "";
+    this.password = password || import.meta.env.VITE_WMS_PASSWORD || "";
   }
 
   getWMSUrl(
