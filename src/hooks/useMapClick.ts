@@ -4,12 +4,14 @@ import type { WFSFeature } from "../services/wfsService";
 
 interface UseMapClickProps {
   onFeatureClick: (feature: WFSFeature) => void;
+  onError?: (error: Error) => void;
   wfsService?: WFSService;
   layerName?: string;
 }
 
 export const useMapClick = ({
   onFeatureClick,
+  onError,
   wfsService,
   layerName,
 }: UseMapClickProps) => {
@@ -50,7 +52,12 @@ export const useMapClick = ({
           console.log("No features found at this location");
         }
       } catch (error) {
-        console.error("Error fetching features:", error);
+        const errorMessage =
+          error instanceof Error ? error : new Error(String(error));
+        console.error("Error fetching features:", errorMessage);
+        if (onError) {
+          onError(errorMessage);
+        }
       }
     },
   });

@@ -49,6 +49,11 @@ function App() {
     setInfoOpen(true);
   };
 
+  const handleError = (error: Error) => {
+    console.error("Map error:", error);
+    // Здесь можно добавить уведомление пользователю
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <AppBar position="static" sx={{ zIndex: 1300 }}>
@@ -77,6 +82,7 @@ function App() {
         <MapView
           selectedLayers={selectedLayers}
           onFeatureClick={handleFeatureClick}
+          onError={handleError}
         />
 
         {infoOpen && (

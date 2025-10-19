@@ -13,14 +13,16 @@ interface MapViewProps {
     zws: boolean;
   };
   onFeatureClick: (feature: WFSFeature) => void;
+  onError?: (error: Error) => void;
 }
 
 const MapClickHandler: React.FC<{
   onFeatureClick: (feature: WFSFeature) => void;
+  onError?: (error: Error) => void;
   wfsService?: WFSService;
   layerName?: string;
-}> = ({ onFeatureClick, wfsService, layerName }) => {
-  useMapClick({ onFeatureClick, wfsService, layerName });
+}> = ({ onFeatureClick, onError, wfsService, layerName }) => {
+  useMapClick({ onFeatureClick, onError, wfsService, layerName });
   return null;
 };
 
@@ -67,6 +69,7 @@ const FeatureMarker: React.FC<{
 const MapView: React.FC<MapViewProps> = ({
   selectedLayers,
   onFeatureClick,
+  onError,
 }) => {
   const [wfsService] = useState(() => new WFSService());
   const [wmsService] = useState(() => new WMSService());
@@ -109,6 +112,7 @@ const MapView: React.FC<MapViewProps> = ({
 
       <MapClickHandler
         onFeatureClick={handleFeatureClick}
+        onError={onError}
         wfsService={selectedLayers.wfs ? wfsService : undefined}
         layerName={layerName}
       />
