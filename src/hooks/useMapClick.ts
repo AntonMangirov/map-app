@@ -1,6 +1,4 @@
-import { useCallback } from "react";
 import { useMapEvents } from "react-leaflet";
-import { LatLng } from "leaflet";
 import { WFSService } from "../services/wfsService";
 import type { WFSFeature } from "../services/wfsService";
 
@@ -21,7 +19,6 @@ export const useMapClick = ({
 
       if (!wfsService || !layerName) {
         console.log("WFS service or layer name not provided - using test mode");
-        // В тестовом режиме создаем фиктивную фичу
         const testFeature = {
           type: "Feature" as const,
           properties: {
@@ -40,7 +37,6 @@ export const useMapClick = ({
       }
 
       try {
-        // Получаем фичи по точке
         const response = await wfsService.getFeatureByPoint(
           lat,
           lng,
@@ -48,7 +44,6 @@ export const useMapClick = ({
         );
 
         if (response && response.features && response.features.length > 0) {
-          // Берем первую найденную фичу
           const feature = response.features[0];
           onFeatureClick(feature);
         } else {

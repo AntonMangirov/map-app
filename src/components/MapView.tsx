@@ -15,7 +15,6 @@ interface MapViewProps {
   onFeatureClick: (feature: WFSFeature) => void;
 }
 
-// Компонент для обработки кликов
 const MapClickHandler: React.FC<{
   onFeatureClick: (feature: WFSFeature) => void;
   wfsService?: WFSService;
@@ -25,7 +24,6 @@ const MapClickHandler: React.FC<{
   return null;
 };
 
-// Компонент для отображения маркера
 const FeatureMarker: React.FC<{
   feature: WFSFeature | null;
 }> = ({ feature }) => {
@@ -36,7 +34,6 @@ const FeatureMarker: React.FC<{
   const coordinates = feature.geometry.coordinates as [number, number];
   const [lng, lat] = coordinates;
 
-  // Создаем кастомную иконку
   const customIcon = new Icon({
     iconUrl:
       "data:image/svg+xml;base64," +
@@ -71,20 +68,20 @@ const MapView: React.FC<MapViewProps> = ({
   selectedLayers,
   onFeatureClick,
 }) => {
-  const [wfsService] = useState(
-    () => new WFSService("https://example.com/wfs")
-  );
-  const [wmsService] = useState(
-    () => new WMSService("https://example.com/wms")
-  );
+  const [wfsService] = useState(() => new WFSService());
+  const [wmsService] = useState(() => new WMSService());
   const [selectedFeature, setSelectedFeature] = useState<WFSFeature | null>(
     null
   );
-  const [layerName] = useState("test_layer"); // В реальном проекте это должно быть динамически
+  const [layerName] = useState(
+    import.meta.env.VITE_DEFAULT_LAYER_NAME || "test_layer"
+  );
 
-  // Центр карты (Москва)
-  const center: [number, number] = [55.7558, 37.6176];
-  const zoom = 10;
+  const center: [number, number] = [
+    Number(import.meta.env.VITE_MAP_CENTER_LAT) || 55.7558,
+    Number(import.meta.env.VITE_MAP_CENTER_LNG) || 37.6176,
+  ];
+  const zoom = Number(import.meta.env.VITE_MAP_ZOOM) || 10;
 
   const handleFeatureClick = (feature: WFSFeature) => {
     setSelectedFeature(feature);
@@ -97,10 +94,8 @@ const MapView: React.FC<MapViewProps> = ({
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}
     >
-      {/* Базовый слой OpenStreetMap */}
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {/* WMS слои */}
       {selectedLayers.wms && (
         <TileLayer
           url={wmsService.getWMSUrl(
@@ -112,14 +107,12 @@ const MapView: React.FC<MapViewProps> = ({
         />
       )}
 
-      {/* Обработчик кликов */}
       <MapClickHandler
         onFeatureClick={handleFeatureClick}
         wfsService={selectedLayers.wfs ? wfsService : undefined}
         layerName={layerName}
       />
 
-      {/* Отображение выбранной фичи */}
       <FeatureMarker feature={selectedFeature} />
     </MapContainer>
   );

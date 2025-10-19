@@ -26,19 +26,13 @@ export class WMSService {
   private username: string;
   private password: string;
 
-  constructor(
-    baseUrl: string,
-    username: string = "mo",
-    password: string = "mo"
-  ) {
-    this.baseUrl = baseUrl;
-    this.username = username;
-    this.password = password;
+  constructor(baseUrl?: string, username?: string, password?: string) {
+    this.baseUrl =
+      baseUrl || import.meta.env.VITE_WMS_BASE_URL || "https://example.com/wms";
+    this.username = username || import.meta.env.VITE_WMS_USERNAME || "mo";
+    this.password = password || import.meta.env.VITE_WMS_PASSWORD || "mo";
   }
 
-  /**
-   * Получить URL для WMS слоя
-   */
   getWMSUrl(
     layerName: string,
     bbox: string,
@@ -62,9 +56,6 @@ export class WMSService {
     return `${this.baseUrl}?${params.toString()}`;
   }
 
-  /**
-   * Получить список доступных слоев
-   */
   async getCapabilities(): Promise<WMSGetCapabilitiesResponse | null> {
     try {
       const params = new URLSearchParams({
@@ -87,7 +78,6 @@ export class WMSService {
       }
 
       const text = await response.text();
-      // Парсим XML ответ (в реальном проекте лучше использовать xml2js)
       return this.parseCapabilitiesXML(text);
     } catch (error) {
       console.error("WMS GetCapabilities error:", error);
@@ -95,13 +85,8 @@ export class WMSService {
     }
   }
 
-  /**
-   * Простой парсер XML для GetCapabilities
-   * В реальном проекте лучше использовать xml2js
-   */
   private parseCapabilitiesXML(xml: string): WMSGetCapabilitiesResponse | null {
     try {
-      // Простая реализация - в реальном проекте нужен полноценный XML парсер
       const parser = new DOMParser();
       const doc = parser.parseFromString(xml, "text/xml");
 
@@ -144,9 +129,6 @@ export class WMSService {
     }
   }
 
-  /**
-   * Создать bbox из координат
-   */
   createBbox(
     minLng: number,
     minLat: number,

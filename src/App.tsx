@@ -51,7 +51,6 @@ function App() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      {/* AppBar */}
       <AppBar position="static" sx={{ zIndex: 1300 }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -74,15 +73,12 @@ function App() {
         </Toolbar>
       </AppBar>
 
-      {/* Основной контент */}
       <Box sx={{ display: "flex", flexGrow: 1, position: "relative" }}>
-        {/* Карта */}
         <MapView
           selectedLayers={selectedLayers}
           onFeatureClick={handleFeatureClick}
         />
 
-        {/* Информационная панель */}
         {infoOpen && (
           <Paper
             sx={{
@@ -135,7 +131,6 @@ function App() {
         )}
       </Box>
 
-      {/* Drawer для управления слоями */}
       <Drawer
         anchor="right"
         open={layersOpen}

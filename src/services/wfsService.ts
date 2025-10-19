@@ -19,19 +19,13 @@ export class WFSService {
   private username: string;
   private password: string;
 
-  constructor(
-    baseUrl: string,
-    username: string = "mo",
-    password: string = "mo"
-  ) {
-    this.baseUrl = baseUrl;
-    this.username = username;
-    this.password = password;
+  constructor(baseUrl?: string, username?: string, password?: string) {
+    this.baseUrl =
+      baseUrl || import.meta.env.VITE_WFS_BASE_URL || "https://example.com/wfs";
+    this.username = username || import.meta.env.VITE_WFS_USERNAME || "mo";
+    this.password = password || import.meta.env.VITE_WFS_PASSWORD || "mo";
   }
 
-  /**
-   * Получить фичи по точке (точечный запрос)
-   */
   async getFeatureByPoint(
     lat: number,
     lng: number,
@@ -68,9 +62,6 @@ export class WFSService {
     }
   }
 
-  /**
-   * Получить фичи по bbox
-   */
   async getFeaturesByBbox(
     bbox: string,
     layerName: string
@@ -103,9 +94,6 @@ export class WFSService {
     }
   }
 
-  /**
-   * Создать bbox из точки с буфером
-   */
   private createBboxFromPoint(
     lat: number,
     lng: number,
@@ -119,9 +107,6 @@ export class WFSService {
     return `${minLng},${minLat},${maxLng},${maxLat}`;
   }
 
-  /**
-   * Получить список доступных слоев
-   */
   async getCapabilities(): Promise<any> {
     try {
       const params = new URLSearchParams({
