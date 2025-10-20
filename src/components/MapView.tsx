@@ -7,6 +7,7 @@ import {
   Popup,
 } from "react-leaflet";
 import { Icon } from "leaflet";
+import { Button, Typography, Box } from "@mui/material";
 import { useMapClick } from "../hooks/useMapClick";
 import { WFSService } from "../services/wfsService";
 import type { WFSFeature } from "../services/wfsService";
@@ -34,7 +35,8 @@ const MapClickHandler: React.FC<{
 
 const FeatureMarker: React.FC<{
   feature: WFSFeature | null;
-}> = ({ feature }) => {
+  onShowDetails: (feature: WFSFeature) => void;
+}> = ({ feature, onShowDetails }) => {
   if (!feature || !feature.geometry || feature.geometry.type !== "Point") {
     return null;
   }
@@ -56,17 +58,64 @@ const FeatureMarker: React.FC<{
     popupAnchor: [0, -41],
   });
 
+  // Ключевые поля для Popup (первые 3-4 свойства)
+  const keyProperties = Object.entries(feature.properties).slice(0, 4);
+  const hasMoreProperties = Object.keys(feature.properties).length > 4;
+
   return (
     <Marker position={[lat, lng]} icon={customIcon}>
-      <Popup>
-        <div>
-          <h3>Информация об объекте</h3>
-          {Object.entries(feature.properties).map(([key, value]) => (
-            <div key={key}>
-              <strong>{key}:</strong> {String(value)}
-            </div>
+      <Popup maxWidth={300}>
+        <Box sx={{ p: 1, minWidth: 200 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ fontSize: "14px", fontWeight: "bold" }}
+          >
+            {import.meta.env.VITE_DEFAULT_LAYER_NAME || "Объект"}
+          </Typography>
+
+          {/* Координаты */}
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", display: "block", mb: 1 }}
+          >
+            📍 [{lat.toFixed(6)}, {lng.toFixed(6)}]
+          </Typography>
+
+          {/* Ключевые свойства */}
+          {keyProperties.map(([key, value]) => (
+            <Box key={key} sx={{ mb: 0.5 }}>
+              <Typography
+                variant="body2"
+                component="span"
+                sx={{ fontWeight: "bold" }}
+              >
+                {key}:
+              </Typography>
+              <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                {String(value)}
+              </Typography>
+            </Box>
           ))}
-        </div>
+
+          {/* Кнопка "Подробнее" */}
+          {hasMoreProperties && (
+            <Box sx={{ mt: 1, textAlign: "center" }}>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => onShowDetails(feature)}
+                sx={{
+                  fontSize: "11px",
+                  py: 0.5,
+                  px: 1,
+                }}
+              >
+                Подробнее ({Object.keys(feature.properties).length - 4} ещё)
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Popup>
     </Marker>
   );
@@ -122,7 +171,7 @@ const MapView: React.FC<MapViewProps> = ({
         layerName={layerName}
       />
 
-      <FeatureMarker feature={selectedFeature} />
+      <FeatureMarker feature={selectedFeature} onShowDetails={onFeatureClick} />
     </MapContainer>
   );
 };
