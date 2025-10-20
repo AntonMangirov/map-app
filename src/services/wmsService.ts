@@ -22,7 +22,7 @@ export interface WMSGetCapabilitiesResponse {
 }
 
 export class WMSService {
-  private baseUrl: string;
+  public baseUrl: string;
   private username: string;
   private password: string;
 

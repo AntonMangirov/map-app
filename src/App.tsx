@@ -12,6 +12,12 @@ import {
   Switch,
   FormControlLabel,
   Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
 import { Layers as LayersIcon, Info as InfoIcon } from "@mui/icons-material";
 import MapView from "./components/MapView";
@@ -104,27 +110,93 @@ function App() {
             <Divider sx={{ mb: 2 }} />
             {selectedFeature ? (
               <Box>
+                {/* Заголовок с именем слоя */}
+                <Typography variant="h6" gutterBottom>
+                  {import.meta.env.VITE_DEFAULT_LAYER_NAME || "Объект"}
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+
+                {/* Координаты */}
+                {selectedFeature.geometry && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Координаты:
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontFamily: "monospace" }}
+                    >
+                      {selectedFeature.geometry.type === "Point"
+                        ? `[${(
+                            selectedFeature.geometry.coordinates as [
+                              number,
+                              number
+                            ]
+                          ).join(", ")}]`
+                        : JSON.stringify(selectedFeature.geometry.coordinates)}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* Свойства объекта */}
                 <Typography variant="subtitle2" gutterBottom>
                   Свойства объекта:
                 </Typography>
-                {Object.entries(selectedFeature.properties).map(
-                  ([key, value]) => (
-                    <Box key={key} sx={{ mb: 1 }}>
-                      <Typography
-                        variant="body2"
-                        component="span"
-                        sx={{ fontWeight: "bold" }}
-                      >
-                        {key}:
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        component="span"
-                        sx={{ ml: 1 }}
-                      >
-                        {String(value)}
-                      </Typography>
-                    </Box>
+
+                {/* Таблица для больших объектов */}
+                {Object.keys(selectedFeature.properties).length > 5 ? (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Свойство</TableCell>
+                          <TableCell>Значение</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {Object.entries(selectedFeature.properties).map(
+                          ([key, value]) => (
+                            <TableRow key={key}>
+                              <TableCell component="th" scope="row">
+                                <Typography
+                                  variant="body2"
+                                  sx={{ fontWeight: "bold" }}
+                                >
+                                  {key}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">
+                                  {String(value)}
+                                </Typography>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  /* Список для небольших объектов */
+                  Object.entries(selectedFeature.properties).map(
+                    ([key, value]) => (
+                      <Box key={key} sx={{ mb: 1 }}>
+                        <Typography
+                          variant="body2"
+                          component="span"
+                          sx={{ fontWeight: "bold" }}
+                        >
+                          {key}:
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          component="span"
+                          sx={{ ml: 1 }}
+                        >
+                          {String(value)}
+                        </Typography>
+                      </Box>
+                    )
                   )
                 )}
               </Box>

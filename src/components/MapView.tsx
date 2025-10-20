@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  WMSTileLayer,
+  Marker,
+  Popup,
+} from "react-leaflet";
 import { Icon } from "leaflet";
 import { useMapClick } from "../hooks/useMapClick";
 import { WFSService } from "../services/wfsService";
@@ -100,13 +106,12 @@ const MapView: React.FC<MapViewProps> = ({
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
       {selectedLayers.wms && (
-        <TileLayer
-          url={wmsService.getWMSUrl(
-            layerName,
-            wmsService.createBbox(-180, -90, 180, 90),
-            256,
-            256
-          )}
+        <WMSTileLayer
+          url={wmsService.baseUrl}
+          layers={layerName}
+          format="image/png"
+          transparent={true}
+          version="1.3.0"
         />
       )}
 
