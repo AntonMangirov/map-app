@@ -1,4 +1,3 @@
-// Упрощенный WMS сервис
 export const getWMSUrl = (layerName: string): string => {
   const baseUrl = import.meta.env.VITE_WMS_BASE_URL;
   if (!baseUrl) {

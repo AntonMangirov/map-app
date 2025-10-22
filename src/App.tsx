@@ -47,10 +47,6 @@ function App() {
   const handleFeatureClick = (feature: WFSFeature) => {
     setSelectedFeature(feature);
     setInfoOpen(true);
-
-    if (!feature.properties) {
-      console.warn("Feature has no properties");
-    }
   };
 
   return (
