@@ -7,11 +7,10 @@ import {
   Popup,
 } from "react-leaflet";
 import { Icon } from "leaflet";
-import { Button, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import { useMapClick } from "../hooks/useMapClick";
-import { WFSService } from "../services/wfsService";
 import type { WFSFeature } from "../services/wfsService";
-import { WMSService } from "../services/wmsService";
+import { getWMSUrl } from "../services/wmsService";
 
 interface MapViewProps {
   selectedLayers: {
@@ -20,24 +19,16 @@ interface MapViewProps {
     zws: boolean;
   };
   onFeatureClick: (feature: WFSFeature) => void;
-  onError?: (error: Error) => void;
 }
-
-const MapClickHandler: React.FC<{
-  onFeatureClick: (feature: WFSFeature) => void;
-  onError?: (error: Error) => void;
-  wfsService?: WFSService;
-  layerName?: string;
-}> = ({ onFeatureClick, onError, wfsService, layerName }) => {
-  useMapClick({ onFeatureClick, onError, wfsService, layerName });
-  return null;
-};
 
 const FeatureMarker: React.FC<{
   feature: WFSFeature | null;
-  onShowDetails: (feature: WFSFeature) => void;
-}> = ({ feature, onShowDetails }) => {
-  if (!feature || !feature.geometry || feature.geometry.type !== "Point") {
+}> = ({ feature }) => {
+  if (!feature) {
+    return null;
+  }
+
+  if (!feature.geometry || feature.geometry.type !== "Point") {
     return null;
   }
 
@@ -58,10 +49,6 @@ const FeatureMarker: React.FC<{
     popupAnchor: [0, -41],
   });
 
-  // Ключевые поля для Popup (первые 3-4 свойства)
-  const keyProperties = Object.entries(feature.properties).slice(0, 4);
-  const hasMoreProperties = Object.keys(feature.properties).length > 4;
-
   return (
     <Marker position={[lat, lng]} icon={customIcon}>
       <Popup maxWidth={300}>
@@ -74,7 +61,6 @@ const FeatureMarker: React.FC<{
             {import.meta.env.VITE_DEFAULT_LAYER_NAME || "Объект"}
           </Typography>
 
-          {/* Координаты */}
           <Typography
             variant="caption"
             sx={{ color: "text.secondary", display: "block", mb: 1 }}
@@ -82,8 +68,7 @@ const FeatureMarker: React.FC<{
             📍 [{lat.toFixed(6)}, {lng.toFixed(6)}]
           </Typography>
 
-          {/* Ключевые свойства */}
-          {keyProperties.map(([key, value]) => (
+          {Object.entries(feature.properties).map(([key, value]) => (
             <Box key={key} sx={{ mb: 0.5 }}>
               <Typography
                 variant="body2"
@@ -97,37 +82,24 @@ const FeatureMarker: React.FC<{
               </Typography>
             </Box>
           ))}
-
-          {/* Кнопка "Подробнее" */}
-          {hasMoreProperties && (
-            <Box sx={{ mt: 1, textAlign: "center" }}>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={() => onShowDetails(feature)}
-                sx={{
-                  fontSize: "11px",
-                  py: 0.5,
-                  px: 1,
-                }}
-              >
-                Подробнее ({Object.keys(feature.properties).length - 4} ещё)
-              </Button>
-            </Box>
-          )}
         </Box>
       </Popup>
     </Marker>
   );
 };
 
+const MapClickHandler: React.FC<{
+  onFeatureClick: (feature: WFSFeature) => void;
+  layerName?: string;
+}> = ({ onFeatureClick, layerName }) => {
+  useMapClick({ onFeatureClick, layerName });
+  return null;
+};
+
 const MapView: React.FC<MapViewProps> = ({
   selectedLayers,
   onFeatureClick,
-  onError,
 }) => {
-  const [wfsService] = useState(() => new WFSService());
-  const [wmsService] = useState(() => new WMSService());
   const [selectedFeature, setSelectedFeature] = useState<WFSFeature | null>(
     null
   );
@@ -156,7 +128,7 @@ const MapView: React.FC<MapViewProps> = ({
 
       {selectedLayers.wms && (
         <WMSTileLayer
-          url={wmsService.baseUrl}
+          url={getWMSUrl(layerName)}
           layers={layerName}
           format="image/png"
           transparent={true}
@@ -166,12 +138,10 @@ const MapView: React.FC<MapViewProps> = ({
 
       <MapClickHandler
         onFeatureClick={handleFeatureClick}
-        onError={onError}
-        wfsService={selectedLayers.wfs ? wfsService : undefined}
-        layerName={layerName}
+        layerName={selectedLayers.wfs ? layerName : undefined}
       />
 
-      <FeatureMarker feature={selectedFeature} onShowDetails={onFeatureClick} />
+      <FeatureMarker feature={selectedFeature} />
     </MapContainer>
   );
 };

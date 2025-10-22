@@ -12,12 +12,6 @@ import {
   Switch,
   FormControlLabel,
   Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
 } from "@mui/material";
 import { Layers as LayersIcon, Info as InfoIcon } from "@mui/icons-material";
 import MapView from "./components/MapView";
@@ -31,7 +25,7 @@ function App() {
   );
   const [selectedLayers, setSelectedLayers] = useState({
     wms: true,
-    wfs: false,
+    wfs: true,
     zws: false,
   });
 
@@ -53,11 +47,10 @@ function App() {
   const handleFeatureClick = (feature: WFSFeature) => {
     setSelectedFeature(feature);
     setInfoOpen(true);
-  };
 
-  const handleError = (error: Error) => {
-    console.error("Map error:", error);
-    // Здесь можно добавить уведомление пользователю
+    if (!feature.properties) {
+      console.warn("Feature has no properties");
+    }
   };
 
   return (
@@ -66,6 +59,21 @@ function App() {
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Картографическое приложение
+            {selectedLayers.wms && (
+              <span style={{ color: "#4caf50", marginLeft: "8px" }}>
+                &#9679;
+              </span>
+            )}
+            {selectedLayers.wfs && (
+              <span style={{ color: "#2196f3", marginLeft: "4px" }}>
+                &#9679;
+              </span>
+            )}
+            {selectedLayers.zws && (
+              <span style={{ color: "#ff9800", marginLeft: "4px" }}>
+                &#9679;
+              </span>
+            )}
           </Typography>
           <IconButton
             color="inherit"
@@ -88,7 +96,6 @@ function App() {
         <MapView
           selectedLayers={selectedLayers}
           onFeatureClick={handleFeatureClick}
-          onError={handleError}
         />
 
         {infoOpen && (
@@ -143,60 +150,24 @@ function App() {
                   Свойства объекта:
                 </Typography>
 
-                {/* Таблица для больших объектов */}
-                {Object.keys(selectedFeature.properties).length > 5 ? (
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Свойство</TableCell>
-                          <TableCell>Значение</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {Object.entries(selectedFeature.properties).map(
-                          ([key, value]) => (
-                            <TableRow key={key}>
-                              <TableCell component="th" scope="row">
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: "bold" }}
-                                >
-                                  {key}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="body2">
-                                  {String(value)}
-                                </Typography>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  /* Список для небольших объектов */
-                  Object.entries(selectedFeature.properties).map(
-                    ([key, value]) => (
-                      <Box key={key} sx={{ mb: 1 }}>
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          {key}:
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{ ml: 1 }}
-                        >
-                          {String(value)}
-                        </Typography>
-                      </Box>
-                    )
+                {Object.entries(selectedFeature.properties).map(
+                  ([key, value]) => (
+                    <Box key={key} sx={{ mb: 1 }}>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {key}:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ ml: 1 }}
+                      >
+                        {String(value)}
+                      </Typography>
+                    </Box>
                   )
                 )}
               </Box>
@@ -232,9 +203,19 @@ function App() {
                 <Switch
                   checked={selectedLayers.wms}
                   onChange={() => handleLayerToggle("wms")}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#4caf50",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#4caf50",
+                    },
+                  }}
                 />
               }
-              label="WMS слои"
+              label={`WMS слои ${
+                selectedLayers.wms ? "(включен)" : "(выключен)"
+              }`}
             />
           </ListItem>
           <ListItem>
@@ -243,9 +224,19 @@ function App() {
                 <Switch
                   checked={selectedLayers.wfs}
                   onChange={() => handleLayerToggle("wfs")}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#2196f3",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#2196f3",
+                    },
+                  }}
                 />
               }
-              label="WFS слои"
+              label={`WFS слои ${
+                selectedLayers.wfs ? "(включен)" : "(выключен)"
+              }`}
             />
           </ListItem>
           <ListItem>
@@ -254,9 +245,19 @@ function App() {
                 <Switch
                   checked={selectedLayers.zws}
                   onChange={() => handleLayerToggle("zws")}
+                  sx={{
+                    "& .MuiSwitch-switchBase.Mui-checked": {
+                      color: "#ff9800",
+                    },
+                    "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                      backgroundColor: "#ff9800",
+                    },
+                  }}
                 />
               }
-              label="ZWS слои"
+              label={`ZWS слои ${
+                selectedLayers.zws ? "(включен)" : "(выключен)"
+              }`}
             />
           </ListItem>
         </List>
