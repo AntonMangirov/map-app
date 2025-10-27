@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ErrorHandler, type AppError } from "../utils/errorHandler";
+import { type ServiceError } from "../types/errorTypes";
 
 export interface AsyncState<T> {
   data: T | null;
@@ -10,20 +11,29 @@ export interface AsyncState<T> {
 export interface UseAsyncOptions {
   immediate?: boolean;
   resetOnExecute?: boolean;
+  retryCount?: number;
+  retryDelay?: number;
+  retryCondition?: (error: AppError) => boolean;
 }
 
 export interface UseAsyncReturn<T> extends AsyncState<T> {
-  execute: (...args: any[]) => Promise<T | null>;
+  execute: (...args: unknown[]) => Promise<T | null>;
   reset: () => void;
   setData: (data: T | null) => void;
   setError: (error: AppError | null) => void;
 }
 
 export function useAsync<T>(
-  asyncFunction: (...args: any[]) => Promise<T>,
+  asyncFunction: (...args: unknown[]) => Promise<T>,
   options: UseAsyncOptions = {}
 ): UseAsyncReturn<T> {
-  const { immediate = false, resetOnExecute = true } = options;
+  const {
+    immediate = false,
+    resetOnExecute = true,
+    retryCount = 3,
+    retryDelay = 1000,
+    retryCondition = (error) => ErrorHandler.shouldRetry(error),
+  } = options;
 
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
@@ -39,8 +49,37 @@ export function useAsync<T>(
     };
   }, []);
 
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const executeWithRetry = useCallback(
+    async (
+      fn: (...args: unknown[]) => Promise<T>,
+      args: unknown[],
+      attempt: number = 1
+    ): Promise<T> => {
+      try {
+        return await fn(...args);
+      } catch (error) {
+        const appError = ErrorHandler.handleFetchError(error, {
+          args,
+          attempt,
+        });
+
+        if (attempt < retryCount && retryCondition(appError)) {
+          const delay = retryDelay * Math.pow(2, attempt - 1);
+          await sleep(delay);
+          return executeWithRetry(fn, args, attempt + 1);
+        }
+
+        throw appError;
+      }
+    },
+    [retryCount, retryDelay, retryCondition]
+  );
+
   const execute = useCallback(
-    async (...args: any[]): Promise<T | null> => {
+    async (...args: unknown[]): Promise<T | null> => {
       if (!isMountedRef.current) return null;
 
       if (resetOnExecute) {
@@ -57,7 +96,7 @@ export function useAsync<T>(
       }
 
       try {
-        const result = await asyncFunction(...args);
+        const result = await executeWithRetry(asyncFunction, args);
 
         if (!isMountedRef.current) return null;
 
@@ -71,18 +110,16 @@ export function useAsync<T>(
       } catch (error) {
         if (!isMountedRef.current) return null;
 
-        const appError = ErrorHandler.handleFetchError(error, { args });
-
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: appError,
+          error: error as AppError,
         }));
 
         return null;
       }
     },
-    [asyncFunction, resetOnExecute]
+    [asyncFunction, resetOnExecute, executeWithRetry]
   );
 
   const reset = useCallback(() => {
@@ -130,26 +167,41 @@ export function useAsync<T>(
 
 export function useWFSQuery() {
   return useAsync(
-    async (lat: number, lng: number, layerName: string) => {
+    async (...args: unknown[]) => {
+      const [lat, lng, layerName] = args as [number, number, string];
       const { getFeatureByPoint } = await import("../services/wfsService");
       const result = await getFeatureByPoint(lat, lng, layerName);
 
       if ("type" in result && result.type) {
-        throw new Error((result as any).message);
+        throw new Error((result as ServiceError).message);
       }
 
       return result;
     },
-    { immediate: false, resetOnExecute: true }
+    {
+      immediate: false,
+      resetOnExecute: true,
+      retryCount: 2,
+      retryDelay: 1000,
+      retryCondition: (error) =>
+        error.type === "NETWORK_ERROR" || error.type === "TIMEOUT_ERROR",
+    }
   );
 }
 
 export function useWMSConnection() {
   return useAsync(
-    async (layerName: string) => {
+    async (...args: unknown[]) => {
+      const [layerName] = args as [string];
       const { testWMSConnection } = await import("../services/wmsService");
       return await testWMSConnection(layerName);
     },
-    { immediate: false, resetOnExecute: true }
+    {
+      immediate: false,
+      resetOnExecute: true,
+      retryCount: 1,
+      retryDelay: 2000,
+      retryCondition: (error) => error.type === "NETWORK_ERROR",
+    }
   );
 }

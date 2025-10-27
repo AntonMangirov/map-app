@@ -7,13 +7,16 @@ import {
   Popup,
 } from "react-leaflet";
 import { Icon } from "leaflet";
-import { Typography, Box, Alert } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import { useMapClick } from "../hooks/useMapClick";
 import type { WFSFeature } from "../services/wfsService";
+import type { ServiceError } from "../types/errorTypes";
 import { getWMSUrl } from "../services/wmsService";
 import ErrorBoundary from "./ErrorBoundary";
 import { MapLoadingOverlay } from "./LoadingStates";
+import { TypedErrorDisplay } from "./TypedErrorDisplay";
 import { useWMSConnection } from "../hooks/useAsync";
+import { useErrorNotifications } from "../contexts/NotificationContext";
 
 interface MapViewProps {
   selectedLayers: {
@@ -124,12 +127,19 @@ const MapView: React.FC<MapViewProps> = ({
   const wmsUrlOrError = getWMSUrl(layerName);
   const wmsError = typeof wmsUrlOrError !== "string" ? wmsUrlOrError : null;
   const wmsConnection = useWMSConnection();
+  const { handleError } = useErrorNotifications();
 
   React.useEffect(() => {
     if (selectedLayers.wms && !wmsError) {
       wmsConnection.execute(layerName);
     }
   }, [selectedLayers.wms, layerName, wmsError, wmsConnection]);
+
+  React.useEffect(() => {
+    if (wmsConnection.error) {
+      handleError(wmsConnection.error as ServiceError);
+    }
+  }, [wmsConnection.error, handleError]);
 
   return (
     <ErrorBoundary>
@@ -153,18 +163,15 @@ const MapView: React.FC<MapViewProps> = ({
                     pointerEvents: "none",
                   }}
                 >
-                  <Alert
-                    severity="warning"
-                    sx={{
-                      mb: 1,
-                      pointerEvents: "auto",
-                      "& .MuiAlert-message": {
-                        fontSize: "0.875rem",
-                      },
+                  <TypedErrorDisplay
+                    error={wmsError}
+                    compact={true}
+                    onRetry={() => {
+                      if (selectedLayers.wms) {
+                        wmsConnection.execute(layerName);
+                      }
                     }}
-                  >
-                    <Typography variant="body2">{wmsError.message}</Typography>
-                  </Alert>
+                  />
                 </Box>
               ) : (
                 <WMSTileLayer

@@ -1,4 +1,10 @@
-import { ErrorHandler, ErrorType, type AppError } from "../utils/errorHandler";
+import { ErrorType } from "../utils/errorHandler";
+import {
+  type WMSError,
+  type WMSValidationError,
+  type WMSConnectionError,
+  createWMSError,
+} from "../types/errorTypes";
 
 export interface WMSConfig {
   baseUrl: string;
@@ -9,50 +15,44 @@ export interface WMSConfig {
   crs?: string;
 }
 
-export interface WMSError extends AppError {
-  layerName: string;
-  config: Partial<WMSConfig>;
-}
+export type { WMSError, WMSValidationError, WMSConnectionError };
 
 export const validateWMSConfig = (
   config: Partial<WMSConfig>
-): WMSError | null => {
+): WMSValidationError | null => {
   if (!config.baseUrl) {
-    return ErrorHandler.createError(
+    return createWMSError(
       ErrorType.VALIDATION_ERROR,
       "WMS URL не настроен. Проверьте переменную окружения VITE_WMS_BASE_URL.",
-      undefined,
-      undefined,
-      { config }
-    ) as WMSError;
+      config.layerName || "unknown",
+      config
+    ) as WMSValidationError;
   }
 
   if (!config.layerName) {
-    return ErrorHandler.createError(
+    return createWMSError(
       ErrorType.VALIDATION_ERROR,
       "Название слоя не указано.",
-      undefined,
-      undefined,
-      { config }
-    ) as WMSError;
+      "unknown",
+      config
+    ) as WMSValidationError;
   }
 
   try {
     new URL(config.baseUrl);
   } catch {
-    return ErrorHandler.createError(
+    return createWMSError(
       ErrorType.VALIDATION_ERROR,
       "Некорректный URL для WMS сервиса.",
-      undefined,
-      undefined,
-      { config }
-    ) as WMSError;
+      config.layerName,
+      config
+    ) as WMSValidationError;
   }
 
   return null;
 };
 
-export const getWMSUrl = (layerName: string): string | WMSError => {
+export const getWMSUrl = (layerName: string): string | WMSValidationError => {
   const config: Partial<WMSConfig> = {
     baseUrl: import.meta.env.VITE_WMS_BASE_URL,
     layerName,
@@ -82,7 +82,7 @@ export const getWMSUrl = (layerName: string): string | WMSError => {
 
 export const testWMSConnection = async (
   layerName: string
-): Promise<boolean> => {
+): Promise<boolean | WMSConnectionError> => {
   try {
     const urlOrError = getWMSUrl(layerName);
 
@@ -103,8 +103,44 @@ export const testWMSConnection = async (
       signal: AbortSignal.timeout(5000),
     });
 
+    if (!response.ok) {
+      return createWMSError(
+        ErrorType.SERVER_ERROR,
+        `WMS сервер вернул ошибку: ${response.status} ${response.statusText}`,
+        layerName,
+        undefined,
+        new Error(`HTTP ${response.status}`)
+      ) as WMSConnectionError;
+    }
+
     return response.ok;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === "TimeoutError" || error.message.includes("timeout")) {
+        return createWMSError(
+          ErrorType.TIMEOUT_ERROR,
+          "Превышено время ожидания ответа от WMS сервера",
+          layerName,
+          undefined,
+          error
+        ) as WMSConnectionError;
+      }
+
+      return createWMSError(
+        ErrorType.NETWORK_ERROR,
+        "Ошибка сети при подключении к WMS серверу",
+        layerName,
+        undefined,
+        error
+      ) as WMSConnectionError;
+    }
+
+    return createWMSError(
+      ErrorType.UNKNOWN_ERROR,
+      "Неизвестная ошибка при тестировании WMS соединения",
+      layerName,
+      undefined,
+      error instanceof Error ? error : new Error(String(error))
+    ) as WMSConnectionError;
   }
 };
