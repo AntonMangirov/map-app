@@ -1,7 +1,6 @@
 import { useMapEvents } from "react-leaflet";
-import { getFeatureByPoint, type WFSError } from "../services/wfsService";
 import type { WFSFeature } from "../services/wfsService";
-import { ErrorHandler } from "../utils/errorHandler";
+import { useWFSQuery } from "./useAsync";
 
 interface UseMapClickProps {
   onFeatureClick: (feature: WFSFeature) => void;
@@ -12,6 +11,8 @@ export const useMapClick = ({
   onFeatureClick,
   layerName,
 }: UseMapClickProps) => {
+  const wfsQuery = useWFSQuery();
+
   const map = useMapEvents({
     async click(e) {
       const { lat, lng } = e.latlng;
@@ -35,35 +36,22 @@ export const useMapClick = ({
         return;
       }
 
-      try {
-        const response = await getFeatureByPoint(lat, lng, layerName);
+      const result = await wfsQuery.execute(lat, lng, layerName);
 
-        if ("type" in response && response.type === "VALIDATION_ERROR") {
-          const error = response as WFSError;
-          console.warn(`WFS Error: ${error.message}`, error.context);
-          return;
-        }
-
-        if (
-          response &&
-          "features" in response &&
-          response.features &&
-          response.features.length > 0
-        ) {
-          const feature = response.features[0];
-          onFeatureClick(feature);
-        } else {
-          console.log("No features found at this location");
-        }
-      } catch (error) {
-        const appError = ErrorHandler.handleFetchError(error, {
-          layerName,
-          coordinates: { lat, lng },
-        });
-        console.warn(`Map click error: ${appError.message}`, appError.context);
+      if (
+        result &&
+        typeof result === "object" &&
+        "features" in result &&
+        (result as any).features &&
+        (result as any).features.length > 0
+      ) {
+        const feature = (result as any).features[0];
+        onFeatureClick(feature);
+      } else if (!wfsQuery.loading && !wfsQuery.error) {
+        console.log("No features found at this location");
       }
     },
   });
 
-  return map;
+  return { map, wfsQuery };
 };

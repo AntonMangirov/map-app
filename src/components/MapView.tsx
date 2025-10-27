@@ -12,6 +12,8 @@ import { useMapClick } from "../hooks/useMapClick";
 import type { WFSFeature } from "../services/wfsService";
 import { getWMSUrl } from "../services/wmsService";
 import ErrorBoundary from "./ErrorBoundary";
+import { MapLoadingOverlay } from "./LoadingStates";
+import { useWMSConnection } from "../hooks/useAsync";
 
 interface MapViewProps {
   selectedLayers: {
@@ -121,60 +123,75 @@ const MapView: React.FC<MapViewProps> = ({
 
   const wmsUrlOrError = getWMSUrl(layerName);
   const wmsError = typeof wmsUrlOrError !== "string" ? wmsUrlOrError : null;
+  const wmsConnection = useWMSConnection();
+
+  React.useEffect(() => {
+    if (selectedLayers.wms && !wmsError) {
+      wmsConnection.execute(layerName);
+    }
+  }, [selectedLayers.wms, layerName, wmsError, wmsConnection]);
 
   return (
     <ErrorBoundary>
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <Box sx={{ position: "relative", height: "100%", width: "100%" }}>
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-        {selectedLayers.wms && (
-          <>
-            {wmsError ? (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 10,
-                  left: 60,
-                  right: 10,
-                  pointerEvents: "none",
-                }}
-              >
-                <Alert
-                  severity="warning"
+          {selectedLayers.wms && (
+            <>
+              {wmsError ? (
+                <Box
                   sx={{
-                    mb: 1,
-                    pointerEvents: "auto",
-                    "& .MuiAlert-message": {
-                      fontSize: "0.875rem",
-                    },
+                    position: "absolute",
+                    top: 10,
+                    left: 60,
+                    right: 10,
+                    pointerEvents: "none",
                   }}
                 >
-                  <Typography variant="body2">{wmsError.message}</Typography>
-                </Alert>
-              </Box>
-            ) : (
-              <WMSTileLayer
-                url={wmsUrlOrError as string}
-                layers={layerName}
-                format="image/png"
-                transparent={true}
-                version="1.3.0"
-              />
-            )}
-          </>
-        )}
+                  <Alert
+                    severity="warning"
+                    sx={{
+                      mb: 1,
+                      pointerEvents: "auto",
+                      "& .MuiAlert-message": {
+                        fontSize: "0.875rem",
+                      },
+                    }}
+                  >
+                    <Typography variant="body2">{wmsError.message}</Typography>
+                  </Alert>
+                </Box>
+              ) : (
+                <WMSTileLayer
+                  url={wmsUrlOrError as string}
+                  layers={layerName}
+                  format="image/png"
+                  transparent={true}
+                  version="1.3.0"
+                />
+              )}
+            </>
+          )}
 
-        <MapClickHandler
-          onFeatureClick={handleFeatureClick}
-          layerName={selectedLayers.wfs ? layerName : undefined}
+          <MapClickHandler
+            onFeatureClick={handleFeatureClick}
+            layerName={selectedLayers.wfs ? layerName : undefined}
+          />
+
+          <FeatureMarker feature={selectedFeature} />
+        </MapContainer>
+
+        {/* Loading overlay for WMS connection test */}
+        <MapLoadingOverlay
+          loading={wmsConnection.loading}
+          message="Проверка соединения с WMS сервисом..."
         />
-
-        <FeatureMarker feature={selectedFeature} />
-      </MapContainer>
+      </Box>
     </ErrorBoundary>
   );
 };
