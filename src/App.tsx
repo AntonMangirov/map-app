@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { Layers as LayersIcon, Info as InfoIcon } from "@mui/icons-material";
 import MapView from "./components/MapView";
+import ErrorBoundary from "./components/ErrorBoundary";
 import type { WFSFeature } from "./services/wfsService";
 
 function App() {
@@ -89,10 +90,12 @@ function App() {
       </AppBar>
 
       <Box sx={{ display: "flex", flexGrow: 1, position: "relative" }}>
-        <MapView
-          selectedLayers={selectedLayers}
-          onFeatureClick={handleFeatureClick}
-        />
+        <ErrorBoundary>
+          <MapView
+            selectedLayers={selectedLayers}
+            onFeatureClick={handleFeatureClick}
+          />
+        </ErrorBoundary>
 
         {infoOpen && (
           <Paper

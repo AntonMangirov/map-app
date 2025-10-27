@@ -1,6 +1,7 @@
 import { useMapEvents } from "react-leaflet";
-import { getFeatureByPoint } from "../services/wfsService";
+import { getFeatureByPoint, type WFSError } from "../services/wfsService";
 import type { WFSFeature } from "../services/wfsService";
+import { ErrorHandler } from "../utils/errorHandler";
 
 interface UseMapClickProps {
   onFeatureClick: (feature: WFSFeature) => void;
@@ -37,14 +38,29 @@ export const useMapClick = ({
       try {
         const response = await getFeatureByPoint(lat, lng, layerName);
 
-        if (response && response.features && response.features.length > 0) {
+        if ("type" in response && response.type === "VALIDATION_ERROR") {
+          const error = response as WFSError;
+          console.warn(`WFS Error: ${error.message}`, error.context);
+          return;
+        }
+
+        if (
+          response &&
+          "features" in response &&
+          response.features &&
+          response.features.length > 0
+        ) {
           const feature = response.features[0];
           onFeatureClick(feature);
         } else {
           console.log("No features found at this location");
         }
       } catch (error) {
-        console.error("Error fetching features:", error);
+        const appError = ErrorHandler.handleFetchError(error, {
+          layerName,
+          coordinates: { lat, lng },
+        });
+        console.warn(`Map click error: ${appError.message}`, appError.context);
       }
     },
   });

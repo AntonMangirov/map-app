@@ -12,19 +12,41 @@ export interface WFSResponse {
   features: WFSFeature[];
 }
 
+import { ErrorHandler, ErrorType, type AppError } from "../utils/errorHandler";
+
+export interface WFSError extends AppError {
+  layerName: string;
+  coordinates: { lat: number; lng: number };
+}
+
 export const getFeatureByPoint = async (
   lat: number,
   lng: number,
   layerName: string
-): Promise<WFSResponse | null> => {
+): Promise<WFSResponse | WFSError> => {
   try {
     const baseUrl = import.meta.env.VITE_WFS_BASE_URL;
     const username = import.meta.env.VITE_WFS_USERNAME || "mo";
     const password = import.meta.env.VITE_WFS_PASSWORD || "mo";
 
     if (!baseUrl) {
-      console.error("WFS URL not configured");
-      return null;
+      return ErrorHandler.createError(
+        ErrorType.VALIDATION_ERROR,
+        "WFS URL не настроен. Проверьте переменную окружения VITE_WFS_BASE_URL.",
+        undefined,
+        undefined,
+        { layerName, coordinates: { lat, lng } }
+      ) as WFSError;
+    }
+
+    if (!layerName) {
+      return ErrorHandler.createError(
+        ErrorType.VALIDATION_ERROR,
+        "Название слоя не указано.",
+        undefined,
+        undefined,
+        { layerName, coordinates: { lat, lng } }
+      ) as WFSError;
     }
 
     const buffer = 0.001;
@@ -48,20 +70,37 @@ export const getFeatureByPoint = async (
       headers: {
         Authorization: `Basic ${btoa(`${username}:${password}`)}`,
       },
+      signal: AbortSignal.timeout(10000), // 10 second timeout
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        console.error("Auth error");
-        return null;
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const httpError = ErrorHandler.handleHttpError(
+        response.status,
+        response.statusText,
+        { layerName, coordinates: { lat, lng }, url }
+      );
+      return httpError as WFSError;
     }
 
     const data = await response.json();
+
+    // Basic validation of response structure
+    if (!data || typeof data !== "object") {
+      return ErrorHandler.createError(
+        ErrorType.VALIDATION_ERROR,
+        "Некорректный формат ответа от WFS сервиса.",
+        undefined,
+        response.status,
+        { layerName, coordinates: { lat, lng }, response: data }
+      ) as WFSError;
+    }
+
     return data;
   } catch (error) {
-    console.error("WFS error:", error);
-    return null;
+    const appError = ErrorHandler.handleFetchError(error, {
+      layerName,
+      coordinates: { lat, lng },
+    });
+    return appError as WFSError;
   }
 };

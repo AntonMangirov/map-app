@@ -7,10 +7,11 @@ import {
   Popup,
 } from "react-leaflet";
 import { Icon } from "leaflet";
-import { Typography, Box } from "@mui/material";
+import { Typography, Box, Alert } from "@mui/material";
 import { useMapClick } from "../hooks/useMapClick";
 import type { WFSFeature } from "../services/wfsService";
 import { getWMSUrl } from "../services/wmsService";
+import ErrorBoundary from "./ErrorBoundary";
 
 interface MapViewProps {
   selectedLayers: {
@@ -118,31 +119,63 @@ const MapView: React.FC<MapViewProps> = ({
     onFeatureClick(feature);
   };
 
+  const wmsUrlOrError = getWMSUrl(layerName);
+  const wmsError = typeof wmsUrlOrError !== "string" ? wmsUrlOrError : null;
+
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      style={{ height: "100%", width: "100%" }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <ErrorBoundary>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-      {selectedLayers.wms && (
-        <WMSTileLayer
-          url={getWMSUrl(layerName)}
-          layers={layerName}
-          format="image/png"
-          transparent={true}
-          version="1.3.0"
+        {selectedLayers.wms && (
+          <>
+            {wmsError ? (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 10,
+                  left: 60,
+                  right: 10,
+                  pointerEvents: "none",
+                }}
+              >
+                <Alert
+                  severity="warning"
+                  sx={{
+                    mb: 1,
+                    pointerEvents: "auto",
+                    "& .MuiAlert-message": {
+                      fontSize: "0.875rem",
+                    },
+                  }}
+                >
+                  <Typography variant="body2">{wmsError.message}</Typography>
+                </Alert>
+              </Box>
+            ) : (
+              <WMSTileLayer
+                url={wmsUrlOrError as string}
+                layers={layerName}
+                format="image/png"
+                transparent={true}
+                version="1.3.0"
+              />
+            )}
+          </>
+        )}
+
+        <MapClickHandler
+          onFeatureClick={handleFeatureClick}
+          layerName={selectedLayers.wfs ? layerName : undefined}
         />
-      )}
 
-      <MapClickHandler
-        onFeatureClick={handleFeatureClick}
-        layerName={selectedLayers.wfs ? layerName : undefined}
-      />
-
-      <FeatureMarker feature={selectedFeature} />
-    </MapContainer>
+        <FeatureMarker feature={selectedFeature} />
+      </MapContainer>
+    </ErrorBoundary>
   );
 };
 
