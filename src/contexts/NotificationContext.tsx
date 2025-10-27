@@ -4,14 +4,14 @@ import React, {
   useReducer,
   useCallback,
 } from "react";
-import { Snackbar, Alert, AlertColor } from "@mui/material";
+import { Snackbar, Alert } from "@mui/material";
 import { type ServiceError } from "../types/errorTypes";
 import { TypedErrorHandler } from "../utils/typedErrorHandler";
 
 interface Notification {
   id: string;
   message: string;
-  severity: AlertColor;
+  severity: "error" | "warning" | "info" | "success";
   duration?: number;
   action?: {
     label: string;
