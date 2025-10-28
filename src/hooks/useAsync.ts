@@ -169,7 +169,7 @@ export function useWFSQuery() {
   return useAsync(
     async (...args: unknown[]) => {
       const [lat, lng, layerName] = args as [number, number, string];
-      const { getFeatureByPoint } = await import("../services/WFSService");
+      const { getFeatureByPoint } = await import("../services/wfsService");
       const result = await getFeatureByPoint(lat, lng, layerName);
 
       if ("type" in result && result.type) {
@@ -193,7 +193,7 @@ export function useWMSConnection() {
   return useAsync(
     async (...args: unknown[]) => {
       const [layerName] = args as [string];
-      const { testWMSConnection } = await import("../services/WMSService");
+      const { testWMSConnection } = await import("../services/wmsService");
       return await testWMSConnection(layerName);
     },
     {

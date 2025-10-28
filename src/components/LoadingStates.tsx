@@ -1,4 +1,4 @@
-import React from "react";
+import { type ReactNode } from "react";
 import {
   Box,
   CircularProgress,
@@ -11,11 +11,11 @@ import { ErrorHandler, type AppError } from "../utils/errorHandler";
 interface LoadingStateProps {
   loading: boolean;
   error: AppError | null;
-  data: any;
+  data: unknown;
   loadingText?: string;
   errorTitle?: string;
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
@@ -75,20 +75,20 @@ interface SkeletonLoaderProps {
 }
 
 export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
-  height = 200,
-  width = "100%",
-  variant = "rectangular",
-  count = 1,
+  height,
+  width,
+  variant,
+  count,
 }) => {
   return (
     <Box>
-      {Array.from({ length: count }).map((_, index) => (
+      {Array.from({ length: count || 1 }).map((_, index) => (
         <Skeleton
           key={index}
-          variant={variant}
-          height={height}
-          width={width}
-          sx={{ mb: count > 1 ? 1 : 0 }}
+          variant={variant || "rectangular"}
+          height={height || 200}
+          width={width || "100%"}
+          sx={{ mb: (count || 1) > 1 ? 1 : 0 }}
         />
       ))}
     </Box>
@@ -102,7 +102,7 @@ interface MapLoadingOverlayProps {
 
 export const MapLoadingOverlay: React.FC<MapLoadingOverlayProps> = ({
   loading,
-  message = "Загрузка карты...",
+  message,
 }) => {
   if (!loading) return null;
 
@@ -125,7 +125,7 @@ export const MapLoadingOverlay: React.FC<MapLoadingOverlayProps> = ({
     >
       <CircularProgress size={50} sx={{ mb: 2 }} />
       <Typography variant="body1" color="text.secondary">
-        {message}
+        {message || "Загрузка карты..."}
       </Typography>
     </Box>
   );

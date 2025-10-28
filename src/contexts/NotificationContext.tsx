@@ -1,8 +1,9 @@
-import React, {
+import {
   createContext,
   useContext,
   useReducer,
   useCallback,
+  type ReactNode,
 } from "react";
 import { Snackbar, Alert } from "@mui/material";
 import { type ServiceError } from "../types/errorTypes";
@@ -70,7 +71,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
+export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(notificationReducer, {

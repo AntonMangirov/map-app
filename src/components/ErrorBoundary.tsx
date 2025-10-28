@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Box, Typography, Button, Paper, Alert } from "@mui/material";
 import { Refresh as RefreshIcon } from "@mui/icons-material";
 
@@ -37,7 +37,7 @@ class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.DEV) {
       console.error("ErrorBoundary caught an error:", error, errorInfo);
     }
   }
@@ -70,7 +70,6 @@ class ErrorBoundary extends Component<Props, State> {
             elevation={3}
             sx={{
               p: 4,
-              maxWidth: 600,
               textAlign: "center",
             }}
           >
@@ -86,7 +85,7 @@ class ErrorBoundary extends Component<Props, State> {
               повторяется.
             </Typography>
 
-            {process.env.NODE_ENV === "development" && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <Box sx={{ mb: 3, textAlign: "left" }}>
                 <Typography variant="subtitle2" gutterBottom>
                   Детали ошибки (только в режиме разработки):

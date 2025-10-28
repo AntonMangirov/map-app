@@ -1,5 +1,5 @@
 import { useMapEvents } from "react-leaflet";
-import type { WFSFeature } from "../services/WFSService";
+import type { WFSFeature } from "../services/wfsService";
 import { useWFSQuery } from "./useAsync";
 
 interface UseMapClickProps {

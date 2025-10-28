@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import {
   Alert,
   AlertTitle,
@@ -49,7 +49,7 @@ export const TypedErrorDisplay: React.FC<TypedErrorDisplayProps> = ({
   onDismiss,
   compact = false,
 }) => {
-  const [expanded, setExpanded] = React.useState(showDetails);
+  const [expanded, setExpanded] = useState(showDetails);
 
   const contextualError =
     "context" in error
@@ -163,7 +163,7 @@ export const TypedErrorDisplay: React.FC<TypedErrorDisplayProps> = ({
           <List dense>
             {summary.actions.map((action, index) => (
               <ListItem key={index} sx={{ py: 0.5 }}>
-                <ListItemIcon sx={{ minWidth: 24 }}>
+                <ListItemIcon>
                   <Typography variant="body2">•</Typography>
                 </ListItemIcon>
                 <ListItemText
