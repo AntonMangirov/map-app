@@ -118,13 +118,11 @@ function App() {
               <Divider sx={{ mb: 2 }} />
               {selectedFeature ? (
                 <Box>
-                  {/* Заголовок с именем слоя */}
                   <Typography variant="h6" gutterBottom>
                     {import.meta.env.VITE_DEFAULT_LAYER_NAME || "Объект"}
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
 
-                  {/* Координаты */}
                   {selectedFeature.geometry && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" gutterBottom>
@@ -148,7 +146,6 @@ function App() {
                     </Box>
                   )}
 
-                  {/* Свойства объекта */}
                   <Typography variant="subtitle2" gutterBottom>
                     Свойства объекта:
                   </Typography>

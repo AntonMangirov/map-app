@@ -1,6 +1,4 @@
 import { RepositoryFactory } from "../repositories/BaseRepository";
-import { InterceptorFactory } from "../http/interceptors";
-import { HttpClient } from "../http/HttpClient";
 import { ErrorType } from "../utils/errorHandler";
 import {
   type WFSError,
@@ -47,7 +45,19 @@ export class WFSService {
     WFSResponse | WFSValidationError | WFSAuthenticationError | WFSResponseError
   > {
     try {
+      console.log("WFS запрос к серверу:");
+      console.log(`   - Координаты: ${lat}, ${lng}`);
+      console.log(`   - Слой: ${layerName}`);
+
       if (!layerName) {
+        console.error("WFS слой не указан:");
+        console.error(
+          "   - Переменная VITE_DEFAULT_LAYER_NAME не найдена в .env файле"
+        );
+        console.error(
+          "   - Проверьте файл .env и добавьте: VITE_DEFAULT_LAYER_NAME=your-layer-name"
+        );
+
         return createWFSError(
           ErrorType.VALIDATION_ERROR,
           "Название слоя не указано.",
@@ -57,6 +67,10 @@ export class WFSService {
       }
 
       if (isNaN(lat) || isNaN(lng)) {
+        console.error("WFS координаты некорректны:");
+        console.error(`   - lat: ${lat}, lng: ${lng}`);
+        console.error("   - Координаты должны быть числами");
+
         return createWFSError(
           ErrorType.VALIDATION_ERROR,
           "Некорректные координаты.",
@@ -65,6 +79,7 @@ export class WFSService {
         ) as WFSValidationError;
       }
 
+      console.log("Отправка запроса к WFS серверу...");
       const response = await this.repository.getFeatureByPoint(
         lat,
         lng,
@@ -75,10 +90,20 @@ export class WFSService {
         const data = response.data as Record<string, unknown>;
 
         if (data.ExceptionReport) {
+          console.error("WFS сервер вернул ошибку:");
           const errorResponse = validateWFSErrorResponse(data);
           const errorMessage =
             errorResponse.ExceptionReport?.Exception?.ExceptionText ||
             "Unknown WFS error";
+
+          console.error(`   - Ошибка: ${errorMessage}`);
+          console.error("   - Проверьте URL сервера в VITE_WFS_BASE_URL");
+          console.error(
+            "   - Проверьте логин/пароль в VITE_WFS_USERNAME/VITE_WFS_PASSWORD"
+          );
+          console.error(
+            "   - Проверьте название слоя в VITE_DEFAULT_LAYER_NAME"
+          );
 
           return createWFSError(
             ErrorType.SERVER_ERROR,
@@ -98,6 +123,7 @@ export class WFSService {
       }
 
       const validatedData = validateWFSResponse(response.data);
+      console.log("WFS запрос выполнен успешно");
       return validatedData as WFSResponse;
     } catch (error) {
       if (error instanceof Error) {
@@ -105,6 +131,10 @@ export class WFSService {
           error.name === "TimeoutError" ||
           error.message.includes("timeout")
         ) {
+          console.error("WFS сервер не отвечает (таймаут):");
+          console.error("   - Сервер слишком медленно отвечает");
+          console.error("   - Проверьте стабильность интернет соединения");
+
           return createWFSError(
             ErrorType.TIMEOUT_ERROR,
             "Превышено время ожидания ответа от WFS сервера",
@@ -116,6 +146,11 @@ export class WFSService {
         }
 
         if (error.message.includes("fetch")) {
+          console.error("Ошибка сети при подключении к WFS:");
+          console.error(`   - Ошибка: ${error.message}`);
+          console.error("   - Проверьте URL сервера в VITE_WFS_BASE_URL");
+          console.error("   - Проверьте интернет соединение");
+
           return createWFSError(
             ErrorType.NETWORK_ERROR,
             "Ошибка сети при подключении к WFS серверу",
@@ -126,6 +161,10 @@ export class WFSService {
           ) as WFSResponseError;
         }
       }
+
+      console.error("Неизвестная ошибка WFS:");
+      console.error(`   - Ошибка: ${String(error)}`);
+      console.error("   - Проверьте настройки сервера и переменные окружения");
 
       return createWFSError(
         ErrorType.UNKNOWN_ERROR,
@@ -147,7 +186,7 @@ export class WFSService {
         ErrorType.NETWORK_ERROR,
         "Не удалось получить capabilities WFS сервиса",
         "capabilities",
-        undefined,
+        { lat: 0, lng: 0 },
         undefined,
         error instanceof Error ? error : new Error(String(error))
       );

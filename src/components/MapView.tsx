@@ -269,7 +269,6 @@ const MapView: React.FC<MapViewProps> = ({
           <FeatureMarker feature={selectedFeature} />
         </MapContainer>
 
-        {/* Loading overlay for WMS connection test */}
         <MapLoadingOverlay
           loading={wmsConnection.loading}
           message="Проверка соединения с WMS сервисом..."
