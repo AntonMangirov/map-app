@@ -5,13 +5,14 @@ import {
   WMSTileLayer,
   Marker,
   Popup,
+  useMapEvents,
 } from "react-leaflet";
 import { Icon } from "leaflet";
 import { Typography, Box } from "@mui/material";
-import { useMapClick } from "../hooks/useMapClick";
-import type { WFSFeature } from "../services/wfsService";
+import type { WFSFeature, WFSResponse } from "../services/wfsService";
 import type { ServiceError } from "../types/errorTypes";
 import { getWMSUrl } from "../services/wmsService";
+import { useWFSQuery } from "../hooks/useAsync";
 import ErrorBoundary from "./ErrorBoundary";
 import { MapLoadingOverlay } from "./LoadingStates";
 import { TypedErrorDisplay } from "./TypedErrorDisplay";
@@ -71,7 +72,7 @@ const FeatureMarker: React.FC<{
             variant="caption"
             sx={{ color: "text.secondary", display: "block", mb: 1 }}
           >
-            📍 [{lat.toFixed(6)}, {lng.toFixed(6)}]
+            Coordinates: [{lat.toFixed(6)}, {lng.toFixed(6)}]
           </Typography>
 
           {Object.entries(feature.properties).map(([key, value]) => (
@@ -98,7 +99,90 @@ const MapClickHandler: React.FC<{
   onFeatureClick: (feature: WFSFeature) => void;
   layerName?: string;
 }> = ({ onFeatureClick, layerName }) => {
-  useMapClick({ onFeatureClick, layerName });
+  const wfsQuery = useWFSQuery();
+
+  console.log("MapClickHandler render - layerName:", layerName);
+
+  useMapEvents({
+    async click(e) {
+      console.log("MapClickHandler - Map clicked at:", e.latlng);
+      const { lat, lng } = e.latlng;
+
+      if (!layerName) {
+        console.log("Creating test feature (no layerName)");
+        const testFeature: WFSFeature = {
+          type: "Feature",
+          properties: {
+            name: "Клик по карте",
+            description: "Создано кликом",
+            coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            timestamp: new Date().toLocaleString(),
+            id: Math.random().toString(36).substr(2, 9),
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+        };
+        console.log("Calling onFeatureClick with test feature:", testFeature);
+        onFeatureClick(testFeature);
+        return;
+      }
+
+      console.log("Making WFS request for layer:", layerName);
+      try {
+        const result = await wfsQuery.execute(lat, lng, layerName);
+
+        if (
+          result &&
+          typeof result === "object" &&
+          "features" in result &&
+          (result as WFSResponse).features &&
+          (result as WFSResponse).features.length > 0
+        ) {
+          const feature = (result as WFSResponse).features[0];
+          console.log("WFS feature found:", feature);
+          onFeatureClick(feature);
+        } else {
+          console.log("No WFS features found, creating test feature");
+          const testFeature: WFSFeature = {
+            type: "Feature",
+            properties: {
+              name: "Клик по карте",
+              description: "Создано кликом (WFS пустой)",
+              coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+              timestamp: new Date().toLocaleString(),
+              id: Math.random().toString(36).substr(2, 9),
+            },
+            geometry: {
+              type: "Point",
+              coordinates: [lng, lat],
+            },
+          };
+          onFeatureClick(testFeature);
+        }
+      } catch (error) {
+        console.error("Error fetching WFS data:", error);
+        console.log("Creating test feature due to WFS error");
+        const testFeature: WFSFeature = {
+          type: "Feature",
+          properties: {
+            name: "Клик по карте",
+            description: "Создано кликом (WFS ошибка)",
+            coordinates: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            timestamp: new Date().toLocaleString(),
+            id: Math.random().toString(36).substr(2, 9),
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+        };
+        onFeatureClick(testFeature);
+      }
+    },
+  });
+
   return null;
 };
 
@@ -120,6 +204,7 @@ const MapView: React.FC<MapViewProps> = ({
   const zoom = Number(import.meta.env.VITE_MAP_ZOOM) || 10;
 
   const handleFeatureClick = (feature: WFSFeature) => {
+    console.log("handleFeatureClick called with:", feature);
     setSelectedFeature(feature);
     onFeatureClick(feature);
   };
@@ -147,7 +232,12 @@ const MapView: React.FC<MapViewProps> = ({
         <MapContainer
           center={center}
           zoom={zoom}
-          style={{ height: "100%", width: "100%" }}
+          style={{
+            height: "100%",
+            width: "100%",
+            zIndex: 1,
+            position: "relative",
+          }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 

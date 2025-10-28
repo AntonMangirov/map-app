@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// WMS Response Validation Schemas
 export const WMSGetCapabilitiesSchema = z.object({
   WMS_Capabilities: z.object({
     Service: z.object({
@@ -63,7 +62,6 @@ export const WMSGetMapResponseSchema = z.object({
   data: z.instanceof(ArrayBuffer),
 });
 
-// WFS Response Validation Schemas
 export const WFSGeometrySchema = z.object({
   type: z.enum([
     "Point",
@@ -162,7 +160,6 @@ export const WFSCapabilitiesSchema = z.object({
   }),
 });
 
-// Error Response Schemas
 export const WMSErrorResponseSchema = z.object({
   ServiceExceptionReport: z.object({
     ServiceException: z.object({
@@ -183,7 +180,6 @@ export const WFSErrorResponseSchema = z.object({
   }),
 });
 
-// Type exports
 export type WMSGetCapabilitiesResponse = z.infer<
   typeof WMSGetCapabilitiesSchema
 >;
@@ -195,7 +191,6 @@ export type WFSCapabilitiesResponse = z.infer<typeof WFSCapabilitiesSchema>;
 export type WMSErrorResponse = z.infer<typeof WMSErrorResponseSchema>;
 export type WFSErrorResponse = z.infer<typeof WFSErrorResponseSchema>;
 
-// Validation functions
 export function validateWMSResponse(data: unknown): WMSGetCapabilitiesResponse {
   try {
     return WMSGetCapabilitiesSchema.parse(data);
